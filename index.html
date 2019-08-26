@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Learning First and Follow</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/simple-sidebar.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+</head>
+
+<body>
+    <script>
+        currentRules = -1;
+    </script>
+    <div id="wrapper">
+        <div id="sidebar-wrapper">
+            <ul class="sidebar-nav">
+                <li class="sidebar-brand">
+                    <a href="#">
+                        First & Follow Sets
+                    </a>
+                </li>
+                <li>
+                    <a href="#">Home</a>
+                </li>
+                <li>
+                    <a href="#">First and Follow</a>
+                </li>
+            
+
+            </ul>
+        </div>
+
+        <!-- END OF LEFT SIDEBAR-->
+        <div id="page-content-wrapper container">
+
+            <div id="rules" class="row">
+                <div class="col-sm-6">
+                    <b> <h6>First Sets</h6></b>
+                    <div class="m">First(A) = All possible terminals that could appear first when A is called</div>
+
+                    <ul>
+                        <li>If X is a terminal then First(X) is just X</li>
+                        <li>Production X -> &epsilon; then add &epsilon; to first(X)</li>
+                        <li>Production X -> Y1Y2..Yk then add first(Y1Y2..Yk) to first(X)</li>
+                        <li>First(Y1Y2..Yk) is either
+                            <ul>
+                                <li>
+                                    First(Y1) (if First(Y1) doesn't contain &epsilon;)
+                                </li>
+                                <li>
+                                    OR (if First(Y1) does contain &epsilon;) then First (Y1Y2..Yk) is everything in First(Y1) (except for ε) as well as everything in First(Y2..Yk)
+                                </li>
+                                <li>
+                                    If First(Y1) First(Y2)..First(Yk) all contain &epsilon; then add &epsilon; to First(Y1Y2..Yk) as well.
+                                </li>
+                            </ul>
+                        </li>
+
+
+                    </ul>
+
+                </div>
+
+                <div class="col-sm-6">
+                    <b> <h6>Follow Sets</h6></b>
+                    <div class="m"> Follow(A) = All possible terminals that could appear after A is called</div>
+
+                    <ul>
+                        <li>Put $ (end of input marker) in Follow(S) where S is the start Variable</li>
+                        <li>production A -> aBb, (where a can be a whole string) then everything in FIRST(b) except for &epsilon; is placed in FOLLOW(B).</li>
+                        <li>If there is a production A -> aB, then everything in FOLLOW(A) is in FOLLOW(B)</li>
+                        <li>If there is a production A -> aBb, where FIRST(b) contains &epsilon;, then everything in FOLLOW(A) is in FOLLOW(B)</li>
+                    </ul>
+
+                </div>
+            </div>
+            <hr>
+            <div id="inputDiv" class="input row">
+                <div  class="col-sm-4" >
+                    <div id="stepButtonContainer">                    
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <h5>Input Grammar</h5>
+                    <textarea rows="7" cols="25" id="inputGrammer"></textarea>
+                    <br>
+                    <button type="button" id="findFirstButton">Find First Sets</button>
+                    <button type="button" id="findFollowButton">Find Follow Sets</button>
+                </div>
+                <div  class="col-sm-4">
+                    <div id="firstSetFinished">
+                    
+                    </div>
+                </div>
+            </div>
+            
+            <hr/>
+
+            <div class="row" id="firstSetTitles">
+
+                <div class="col-sm-4">
+                    RULES
+                </div>
+                <div class="col-sm-4">
+                    EXPLANATION
+                </div>
+                <div class="col-sm-4">
+                    CURRENT SET
+                </div>
+            </div>
+            <div class="row" id="displayDiv">
+
+                <div  class="col-sm-4">
+                    <div id="displayRules" class="displayRules margCon">
+                                                                                                                                    
+                    </div>
+                </div>
+                <div  class="col-sm-4">
+                    <div id="displayExplanation" class="displayExplanation margConMiddle">
+                        
+                    </div>
+                </div>
+                <div  class="col-sm-4">
+                    <div id="displaySet" class="displayFirstSet margCon">
+                        
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="js/jquery.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/global.js"></script>
+    <script>
+        $("textarea").append("S -> ABC | fgd | c | AB\nA -> a | #\nB -> # | ba | C\nC -> C | A\nD -> r | B");
+        $('#findFirstButton').click(function () {
+            initializeSets();
+
+            $("#stepButtonContainer").html("<button type='button' onclick='firstStep()'>Step</button>");
+            firstSet = pushRulesSet();
+            console.log("first set initialized:" + firstSet);
+            updateFirstDisplay();
+        });
+        $('#findFollowButton').click(function () {
+            initializeSets();
+            $("#stepButtonContainer").html("<button type='button' onclick='followStep()'>Step</button>");
+            
+
+            firstSet = pushRulesSet();
+            quickFirst();
+            console.log("first set finished for follow set:" + firstSet);
+            followSet = pushRulesSet();
+            followSet[0].rhs.push('$');
+            document.getElementById("displayExplanation").innerHTML = "$ represents the end of input. It is added to the start variable for every follow set to show that the start variable will always be followed by the end of input <br><br>";
+            console.log("follow set initialized:" + followSet);
+            updateFollowDisplay();
+            changed = true;
+            
+            document.getElementById("firstSetFinished").innerHTML = "<br>";
+            for (var i = 0; i < firstSet.length; i++) {
+                document.getElementById("firstSetFinished").innerHTML += "First(" + firstSet[i].variable + ") = ";
+                for (var j = 0; j < firstSet[i].rhs.length; j++) {
+                    document.getElementById("firstSetFinished").innerHTML += firstSet[i].rhs[j] + ", ";
+                }
+                document.getElementById("firstSetFinished").innerHTML += "<br>";
+            }
+
+        });
+
+        $("#menu-toggle").click(function (e) {
+            e.preventDefault();
+            $("#wrapper").toggleClass("toggled");
+        });
+    </script>
+</body>
+
+</html>
